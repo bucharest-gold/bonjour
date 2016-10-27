@@ -19,6 +19,8 @@
   "dependencies": {
     "es6-shim": "^0.35.1",
     "express": "^4.13.4",
+    "levee": "~1.2.0",
+    "roi": "~0.13.0",
     "zipkin": "^0.2.5",
     "zipkin-context-cls": "^0.2.1",
     "zipkin-instrumentation-express": "^0.2.5",

@@ -21,6 +21,21 @@ const express = require('express');
 const {Tracer, ExplicitContext, BatchRecorder, ConsoleRecorder} = require('zipkin');
 const zipkinMiddleware = require('zipkin-instrumentation-express').expressMiddleware;
 
+// chaining
+const roi = require('roi');
+
+// circuit breaker
+const Levee = require('levee');
+const circuitOptions = {
+    maxFailures: 5,
+    timeout: 30000,
+    resetTimeout: 15000
+};
+const chainingOptions = {
+    endpoint: 'http://some-msa-endpoint'
+};
+const circuit = Levee.createBreaker(roi.get, circuitOptions);
+
 const ctxImpl = new ExplicitContext();
 const {HttpLogger} = require('zipkin-transport-http');
 
@@ -45,12 +60,12 @@ var os = require('os');
 var app = express();
 
 app.use(zipkinMiddleware({
-  tracer,
-  serviceName: 'bonjour' // name of this application
+    tracer,
+    serviceName: 'bonjour' // name of this application
 }));
 
-function say_bonjour () {
-  return 'Bonjour de ' + os.hostname();
+function say_bonjour(){
+    return `Bonjour de ${os.hostname()}`;
 }
 
 app.get('/api/bonjour', function (req, resp) {
@@ -58,14 +73,18 @@ app.get('/api/bonjour', function (req, resp) {
   resp.send(say_bonjour());
 });
 
-app.get('/api/health', function (req, resp) {
-  resp.set('Access-Control-Allow-Origin', '*');
-  resp.send("I'm ok");
+app.get('/api/bonjour-chaining', function(req, resp) {
+    circuit.run(chainingOptions);
 });
 
-var server = app.listen(8080, '0.0.0.0', function () {
-  var host = server.address().address;
-  var port = server.address().port;
+app.get('/api/health', function(req, resp) {
+    resp.set('Access-Control-Allow-Origin', '*');
+    resp.send('I am ok');
+});
 
-  console.log('Bonjour service running at http://%s:%s', host, port);
+var server = app.listen(8080, '0.0.0.0', function() {
+    var host = server.address().address;
+    var port = server.address().port;
+
+    console.log('Bonjour service running at http://%s:%s', host, port);
 });
