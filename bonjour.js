@@ -25,16 +25,17 @@ const zipkinMiddleware = require('zipkin-instrumentation-express').expressMiddle
 const roi = require('roi');
 
 // circuit breaker
-const Levee = require('levee');
+const circuitBreaker = require('opossum');
 const circuitOptions = {
     maxFailures: 5,
-    timeout: 30000,
-    resetTimeout: 15000
+    timeout: 5000,
+    resetTimeout: 5000
 };
 const chainingOptions = {
     endpoint: 'http://some-msa-endpoint'
 };
-const circuit = Levee.createBreaker(roi.get, circuitOptions);
+const circuit = circuitBreaker(roi.get, circuitOptions);
+circuit.fallback(() => ('That service is currently unavailable.'));
 
 const ctxImpl = new ExplicitContext();
 const {HttpLogger} = require('zipkin-transport-http');
@@ -74,7 +75,10 @@ app.get('/api/bonjour', function (req, resp) {
 });
 
 app.get('/api/bonjour-chaining', function(req, resp) {
-    circuit.run(chainingOptions);
+    circuit.fire(chainingOptions).then((response) => {
+        resp.set('Access-Control-Allow-Origin', '*');
+        resp.send(response);
+    }).catch((e) => resp.send(e));
 });
 
 app.get('/api/health', function(req, resp) {
