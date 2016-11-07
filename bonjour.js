@@ -27,12 +27,12 @@ const roi = require('roi');
 // circuit breaker
 const circuitBreaker = require('opossum');
 const circuitOptions = {
-    maxFailures: 5,
-    timeout: 5000,
-    resetTimeout: 5000
+  maxFailures: 5,
+  timeout: 5000,
+  resetTimeout: 5000
 };
 const chainingOptions = {
-    endpoint: 'http://some-msa-endpoint'
+  endpoint: 'http://some-msa-endpoint'
 };
 const circuit = circuitBreaker(roi.get, circuitOptions);
 circuit.fallback(() => ('That service is currently unavailable.'));
@@ -61,12 +61,12 @@ var os = require('os');
 var app = express();
 
 app.use(zipkinMiddleware({
-    tracer,
-    serviceName: 'bonjour' // name of this application
+  tracer,
+  serviceName: 'bonjour' // name of this application
 }));
 
 function say_bonjour(){
-    return `Bonjour de ${os.hostname()}`;
+  return `Bonjour de ${os.hostname()}`;
 }
 
 app.get('/api/bonjour', function (req, resp) {
@@ -75,20 +75,20 @@ app.get('/api/bonjour', function (req, resp) {
 });
 
 app.get('/api/bonjour-chaining', function(req, resp) {
-    circuit.fire(chainingOptions).then((response) => {
-        resp.set('Access-Control-Allow-Origin', '*');
-        resp.send(response);
-    }).catch((e) => resp.send(e));
+  circuit.fire(chainingOptions).then((response) => {
+    resp.set('Access-Control-Allow-Origin', '*');
+    resp.send(response);
+  }).catch((e) => resp.send(e));
 });
 
 app.get('/api/health', function(req, resp) {
-    resp.set('Access-Control-Allow-Origin', '*');
-    resp.send('I am ok');
+  resp.set('Access-Control-Allow-Origin', '*');
+  resp.send('I am ok');
 });
 
 var server = app.listen(8080, '0.0.0.0', function() {
-    var host = server.address().address;
-    var port = server.address().port;
+  var host = server.address().address;
+  var port = server.address().port;
 
-    console.log('Bonjour service running at http://%s:%s', host, port);
+  console.log('Bonjour service running at http://%s:%s', host, port);
 });
