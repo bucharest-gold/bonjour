@@ -23,19 +23,21 @@ const zipkinMiddleware = require('zipkin-instrumentation-express').expressMiddle
 
 // chaining
 const roi = require('roi');
+const circuitBreaker = require('opossum');
 
 // circuit breaker
-const circuitBreaker = require('opossum');
 const circuitOptions = {
   maxFailures: 5,
-  timeout: 5000,
-  resetTimeout: 5000
+  timeout: 1000,
+  resetTimeout: 10000
 };
-const chainingOptions = {
-  endpoint: 'http://some-msa-endpoint'
-};
+const nextService = 'hola';
 const circuit = circuitBreaker(roi.get, circuitOptions);
-circuit.fallback(() => ('That service is currently unavailable.'));
+circuit.fallback(() => (`The ${nextService} service is currently unavailable.`));
+
+const chainingOptions = {
+  endpoint: 'http://hola:8080'
+};
 
 const ctxImpl = new ExplicitContext();
 const {HttpLogger} = require('zipkin-transport-http');
@@ -44,7 +46,7 @@ var recorder;
 if (process.env.ZIPKIN_SERVER_URL === undefined) {
   console.log('No ZIPKIN_SERVER_URL defined. Printing zipkin traces to console.');
   recorder = new ConsoleRecorder();
-}else {
+} else {
   recorder = new BatchRecorder({
     logger: new HttpLogger({
       endpoint: process.env.ZIPKIN_SERVER_URL + '/api/v1/spans'
