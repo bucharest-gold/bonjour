@@ -35,8 +35,9 @@ const nextService = 'hola';
 const circuit = circuitBreaker(roi.get, circuitOptions);
 circuit.fallback(() => (`The ${nextService} service is currently unavailable.`));
 
+// Using a hardcoded URL from my environment here.
 const chainingOptions = {
-  endpoint: 'http://hola:8080'
+  endpoint: 'http://hola-myproject.192.168.1.8.xip.io/api/hola'
 };
 
 const ctxImpl = new ExplicitContext();
@@ -67,7 +68,14 @@ app.use(zipkinMiddleware({
   serviceName: 'bonjour' // name of this application
 }));
 
-function say_bonjour(){
+function say_bonjour() {
+  // Doing a plain roi GET on hola URL.
+  // Useful to test with ab via terminal:
+  // ab -n 10000 -c 100 http://bonjour-myproject.192.168.1.8.xip.io/api/bonjour
+  // To see if it works 'oc log dc/bonjour'
+  roi.get(chainingOptions)
+    .then(x => console.log(x))
+    .catch(e => console.log(e));
   return `Bonjour de ${os.hostname()}`;
 }
 
